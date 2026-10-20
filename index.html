@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Packet Tracer - Interactive Network Simulator</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌐</text></svg>">
+</head>
+<body>
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-brand">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M12 3v6m0 6v6M3 12h6m6 0h6"></path>
+          <circle cx="12" cy="3" r="2"></circle>
+          <circle cx="12" cy="21" r="2"></circle>
+          <circle cx="3" cy="12" r="2"></circle>
+          <circle cx="21" cy="12" r="2"></circle>
+        </svg>
+      </div>
+      <div>
+        <h1 class="nav-title">Web Packet Tracer</h1>
+        <span class="nav-subtitle">Cisco-inspired Network Simulator</span>
+      </div>
+    </div>
+
+    <!-- Mode & Playback Controls -->
+    <div class="nav-center">
+      <div class="btn-group">
+        <button id="btnRealtime" class="btn active" title="Realtime Simulation">⚡ Realtime</button>
+        <button id="btnSimulation" class="btn" title="Inspect packets step-by-step">⏱️ Simulation</button>
+      </div>
+      <div id="simControls" class="sim-controls" style="display: none;">
+        <button id="btnSimPlay" class="btn btn-icon" title="Play/Pause">▶️</button>
+        <button id="btnSimStep" class="btn btn-icon" title="Forward 1 Step">⏭️</button>
+        <button id="btnSimReset" class="btn btn-icon" title="Clear Packets">🔄</button>
+      </div>
+    </div>
+
+    <!-- Actions & Topology Presets -->
+    <div class="nav-actions">
+      <div class="dropdown">
+        <button class="btn btn-secondary">📑 Topologies ▾</button>
+        <div class="dropdown-content">
+          <a href="#" id="presetP2P">Direct PC to PC</a>
+          <a href="#" id="presetSwitch">Switch Star LAN (3 PCs)</a>
+          <a href="#" id="presetRouted">Two Subnets via Router</a>
+          <a href="#" id="presetEmpty">Blank Workspace</a>
+        </div>
+      </div>
+      <button id="btnExport" class="btn btn-secondary" title="Export Topology as JSON">💾 Export</button>
+      <label class="btn btn-secondary" title="Import Topology JSON" style="cursor: pointer;">
+        📂 Import <input type="file" id="fileImport" accept=".json" style="display:none;">
+      </label>
+      <button id="btnClearAll" class="btn btn-danger" title="Clear Canvas">🗑️ Clear</button>
+      <a href="https://github.com/hammadshakeelai/packet-tracer-web" target="_blank" class="btn btn-github">
+        <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+        GitHub
+      </a>
+    </div>
+  </header>
+
+  <!-- Main App Layout -->
+  <div class="app-container">
+    <!-- Left Device Palette -->
+    <aside class="sidebar">
+      <div class="sidebar-header">Device Palette</div>
+      <div class="palette-tools">
+        <div class="palette-group-title">Tools</div>
+        <button id="toolSelect" class="palette-btn active" title="Select & Move (V)">
+          <span class="icon">↖️</span>
+          <span class="name">Select</span>
+        </button>
+        <button id="toolCable" class="palette-btn" title="Connect Copper Straight-Through Cable (C)">
+          <span class="icon">🔌</span>
+          <span class="name">Cable</span>
+        </button>
+        <button id="toolPing" class="palette-btn" title="Add Simple PDU / Ping (P)">
+          <span class="icon">✉️</span>
+          <span class="name">Ping PDU</span>
+        </button>
+        <button id="toolDelete" class="palette-btn" title="Delete Device or Link (Del)">
+          <span class="icon">❌</span>
+          <span class="name">Delete</span>
+        </button>
+      </div>
+
+      <div class="palette-group-title">Devices (Click or Drag)</div>
+      <div class="palette-devices">
+        <div class="palette-item" draggable="true" data-type="pc">
+          <div class="item-icon pc-icon">💻</div>
+          <span class="item-label">PC Workstation</span>
+        </div>
+        <div class="palette-item" draggable="true" data-type="server">
+          <div class="item-icon server-icon">🖥️</div>
+          <span class="item-label">Server</span>
+        </div>
+        <div class="palette-item" draggable="true" data-type="switch">
+          <div class="item-icon switch-icon">🔲</div>
+          <span class="item-label">2960 Switch</span>
+        </div>
+        <div class="palette-item" draggable="true" data-type="router">
+          <div class="item-icon router-icon">🌐</div>
+          <span class="item-label">2811 Router</span>
+        </div>
+      </div>
+
+      <div class="palette-tip">
+        <strong>Quick Guide:</strong>
+        <ul>
+          <li><strong>Add:</strong> Drag device to canvas</li>
+          <li><strong>Connect:</strong> Click 🔌 Cable tool, then click 2 devices</li>
+          <li><strong>Configure:</strong> Click any device with ↖️ Select tool</li>
+          <li><strong>Ping:</strong> Click ✉️ Ping, then click Source &amp; Destination</li>
+        </ul>
+      </div>
+    </aside>
+
+    <!-- Canvas Workspace -->
+    <main class="canvas-wrapper" id="canvasWrapper">
+      <canvas id="networkCanvas"></canvas>
+
+      <!-- Active Tool Floating Badge -->
+      <div id="toolIndicator" class="tool-indicator">Tool: Select &amp; Move</div>
+
+      <!-- Quick Status Toast Notification -->
+      <div id="toast" class="toast"></div>
+    </main>
+
+    <!-- Bottom Simulation & Event Log Drawer -->
+    <aside class="event-drawer" id="eventDrawer">
+      <div class="drawer-header" id="drawerToggle">
+        <div class="drawer-title">
+          <span>📋 Simulation Event Log &amp; PDU Inspector</span>
+          <span id="pduCountBadge" class="badge">0 events</span>
+        </div>
+        <div class="drawer-controls">
+          <button id="btnClearLog" class="btn btn-xs">Clear Log</button>
+          <span class="toggle-arrow">▲</span>
+        </div>
+      </div>
+      <div class="drawer-content">
+        <table class="event-table">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Time</th>
+              <th>Protocol</th>
+              <th>Source</th>
+              <th>Destination</th>
+              <th>Current Node</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody id="eventTableBody">
+            <tr class="empty-row"><td colspan="7">No packet transmissions yet. Use the ✉️ Ping tool or device CLI to generate traffic.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Device Configuration / CLI Modal -->
+  <div id="deviceModal" class="modal-backdrop" style="display: none;">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span id="modalDeviceIcon" class="modal-device-icon">💻</span>
+          <div>
+            <h2 id="modalDeviceName" class="modal-title">PC0</h2>
+            <span id="modalDeviceType" class="modal-subtitle">Workstation Host</span>
+          </div>
+        </div>
+        <button id="modalClose" class="modal-close-btn">&times;</button>
+      </div>
+
+      <!-- Tabs (Config, CLI / Terminal, Routing Table / MAC Table) -->
+      <div class="modal-tabs">
+        <button class="modal-tab active" data-tab="tabConfig">⚙️ Config</button>
+        <button class="modal-tab" data-tab="tabCli">💻 Command Prompt</button>
+        <button id="tabTablesBtn" class="modal-tab" data-tab="tabTables">📊 Tables</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Configuration Tab -->
+        <div id="tabConfig" class="tab-pane active">
+          <div id="hostConfigForm">
+            <div class="form-group">
+              <label>Device Display Name</label>
+              <input type="text" id="cfgDeviceName" class="form-input">
+            </div>
+
+            <!-- Interfaces (e.g. FastEthernet0 or Router Fa0/0, Fa0/1) -->
+            <div id="interfaceConfigsContainer"></div>
+          </div>
+        </div>
+
+        <!-- CLI / Command Prompt Tab -->
+        <div id="tabCli" class="tab-pane">
+          <div class="cli-container">
+            <div id="cliOutput" class="cli-output"></div>
+            <div class="cli-input-line">
+              <span id="cliPrompt" class="cli-prompt">PC0&gt;</span>
+              <input type="text" id="cliInput" class="cli-input" autofocus autocomplete="off" spellcheck="false">
+            </div>
+          </div>
+        </div>
+
+        <!-- Tables Tab (ARP Table, MAC Address Table, Routing Table) -->
+        <div id="tabTables" class="tab-pane">
+          <div id="tablesContainer" class="tables-view"></div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="modalSave" class="btn btn-primary">Apply &amp; Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Script -->
+  <script src="app.js"></script>
+</body>
+</html>
